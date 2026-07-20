@@ -218,6 +218,7 @@
     </style>
   </head>
   <body>
+    <div id="fade-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:var(--bg-color); z-index:9999; pointer-events:none; transition: opacity 0.8s ease;"></div>
     <canvas id="bg-canvas"></canvas>
     
     <nav class="navbar">
@@ -299,6 +300,12 @@
         langToggle.textContent = t.langBtn;
         themeToggle.textContent = isLightMode ? t.themeDark : t.themeLight;
       }
+
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          document.getElementById('fade-overlay').style.opacity = '0';
+        }, 300);
+      });
 
       function toggleLanguage() {
         currentLang = currentLang === 'en' ? 'th' : 'en';

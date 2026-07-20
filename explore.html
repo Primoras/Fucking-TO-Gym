@@ -230,12 +230,14 @@
     </style>
   </head>
   <body>
+    <div id="fade-overlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:var(--bg-color); z-index:9999; pointer-events:none; transition: opacity 0.8s ease;"></div>
     <!-- 3D Canvas Background -->
     <canvas id="bg-canvas"></canvas>
 
     <div class="top-nav">
       <a href="index.html" class="nav-back" id="nav-back">&larr; BACK</a>
       <div class="settings-group">
+        <button class="settings-btn" id="sound-toggle">🔊 SOUND</button>
         <button class="settings-btn" id="lang-toggle">TH</button>
         <button class="settings-btn" id="theme-toggle">☀️ LIGHT</button>
       </div>
@@ -283,8 +285,11 @@
     <script type="module" src="/src/explore-3d.js"></script>
 
     <script>
+      let isSoundEnabled = true;
+
       // Web Audio API helper for sound effects
       function playSound(frequency, duration) {
+        if (!isSoundEnabled) return;
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -316,6 +321,8 @@
           langBtn: "TH",
           themeLight: "☀️ LIGHT",
           themeDark: "🌙 DARK",
+          soundOn: "🔊 SOUND",
+          soundOff: "🔇 MUTE",
           alertEmpty: "Please enter a habit name."
         },
         'th': {
@@ -333,6 +340,8 @@
           langBtn: "EN",
           themeLight: "☀️ สว่าง",
           themeDark: "🌙 มืด",
+          soundOn: "🔊 เปิดเสียง",
+          soundOff: "🔇 ปิดเสียง",
           alertEmpty: "กรุณาพิมพ์ชื่อสิ่งที่ต้องการเพิ่มครับ"
         }
       };
@@ -352,6 +361,7 @@
         
         document.getElementById('lang-toggle').textContent = t.langBtn;
         document.getElementById('theme-toggle').textContent = isLightMode ? t.themeDark : t.themeLight;
+        document.getElementById('sound-toggle').textContent = isSoundEnabled ? t.soundOn : t.soundOff;
         
         // Render table to update table headers
         if (months.length > 0) renderTable();
@@ -373,6 +383,11 @@
           localStorage.setItem('theme', 'dark');
         }
         document.getElementById('theme-toggle').textContent = isLightMode ? translations[currentLang].themeDark : translations[currentLang].themeLight;
+      });
+
+      document.getElementById('sound-toggle').addEventListener('click', () => {
+        isSoundEnabled = !isSoundEnabled;
+        updateLanguageUI();
       });
 
       // CORE HABIT TRACKER LOGIC
@@ -700,6 +715,23 @@
         chartInstance.update();
       }
 
+      function playChartIntroAnimation() {
+        const days = daysInMonths[currentMonthIndex];
+        const labels = Array.from({length: days}, (_, i) => i + 1);
+        
+        // Random high numbers for the initial shoot up
+        const fakeHighData = Array.from({length: days}, () => Math.floor(Math.random() * 8) + 5); 
+        
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets[0].data = fakeHighData;
+        chartInstance.update('none'); // Update instantly without animation
+
+        // Wait a bit, then animate down smoothly to actual values
+        setTimeout(() => {
+          updateChart();
+        }, 100);
+      }
+
       // Add sound on check-box toggle
       function attachCheckBoxSounds() {
         document.querySelectorAll('.check-box').forEach(box => {
@@ -737,7 +769,13 @@
       applyModeTheme(); // Apply the theme based on URL parameter immediately
       updateLanguageUI(); // Update UI translations (also calls renderTable)
       renderTabs(); // Render month tabs
-      updateChart();
+      playChartIntroAnimation(); // Run the intro animation instead of instant updateChart()
+
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          document.getElementById('fade-overlay').style.opacity = '0';
+        }, 300);
+      });
     </script>
   </body>
 </html>
