@@ -134,9 +134,35 @@ function animate() {
     camera.position.y += ((mouseY * 2 + 15) - camera.position.y) * 0.05;
     camera.lookAt(0, 0, 0);
 
+    // Flash Light Logic
+    if (flashTime > 0) {
+        flashTime -= 0.02; // ลดลงทีละนิด (ขึ้นอยู่กับ frame rate)
+        pointLight.intensity = 10 + (flashTime * 50);
+        if (flashTime <= 0) {
+            pointLight.color.setHex(0xff0000); // กลับเป็นสีแดง
+            pointLight.intensity = 10;
+        }
+    }
+
     renderer.render(scene, camera);
 }
 animate();
+
+// 7. Interactive Triggers from HTML
+let flashTime = 0;
+window.trigger3DSuccess = function() {
+    // แสงสว่างวาบสีทอง
+    pointLight.color.setHex(0xffcc00);
+    pointLight.intensity = 60;
+    flashTime = 1.0; 
+
+    // สุ่มแท่งกราฟให้พุ่งขึ้น
+    for(let i = 0; i < 5; i++) {
+        const randomBar = bars[Math.floor(Math.random() * bars.length)];
+        randomBar.scale.y = 40;
+        randomBar.position.y = -15 + 20;
+    }
+};
 
 // จัดการเรื่องการย่อ/ขยายหน้าต่างเบราว์เซอร์
 window.addEventListener('resize', () => {
