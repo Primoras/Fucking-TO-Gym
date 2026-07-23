@@ -3,14 +3,13 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // TODO: Replace this with your actual Firebase config
-// ไปที่เว็บ Firebase -> Project Settings -> General -> เลื่อนลงมาล่างสุดที่ Your apps -> Copy Config มาวางทับตรงนี้
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA-3vBQcmsHt_sRSrzjyH2-OATv0A9k-vY",
+  authDomain: "my-gym-tracker-9a7a8.firebaseapp.com",
+  projectId: "my-gym-tracker-9a7a8",
+  storageBucket: "my-gym-tracker-9a7a8.firebasestorage.app",
+  messagingSenderId: "859369757702",
+  appId: "1:859369757702:web:6a75a65057200495a97787"
 };
 
 // Initialize Firebase
