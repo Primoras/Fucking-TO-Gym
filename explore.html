@@ -237,6 +237,7 @@
     <div class="top-nav">
       <a href="index.html" class="nav-back" id="nav-back">&larr; BACK</a>
       <div class="settings-group">
+        <button class="settings-btn" id="logout-btn">🚪 LOGOUT</button>
         <button class="settings-btn" id="sound-toggle">🔊 SOUND</button>
         <button class="settings-btn" id="lang-toggle">TH</button>
         <button class="settings-btn" id="theme-toggle">☀️ LIGHT</button>
@@ -293,7 +294,13 @@
     
     <script type="module" src="/src/explore-3d.js"></script>
 
-    <script>
+    <script type="module">
+      import { auth, db } from './src/firebase.js';
+      import { onAuthStateChanged, signOut } from "firebase/auth";
+      import { doc, setDoc, getDoc } from "firebase/firestore";
+
+      let currentUser = null;
+      let isDataLoaded = false;
       let isSoundEnabled = true;
 
       // Web Audio API helper for sound effects
@@ -376,8 +383,14 @@
         document.getElementById('summary-title').textContent = t.summaryTitle;
         
         // Render table to update table headers
-        if (months.length > 0) renderTable();
+        if (months.length > 0 && isDataLoaded) renderTable();
       }
+
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        signOut(auth).then(() => {
+            window.location.href = "login.html";
+        }).catch(err => console.error(err));
+      });
 
       document.getElementById('lang-toggle').addEventListener('click', () => {
         currentLang = currentLang === 'en' ? 'th' : 'en';
@@ -438,22 +451,47 @@
       let chartInstance = null;
       let donutInstance = null;
 
-      function saveData() {
-        localStorage.setItem('gymTrackerHabits', JSON.stringify(habits));
-        localStorage.setItem('gymTrackerData', JSON.stringify(habitData));
+      async function saveData() {
+        if(!currentUser) return;
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), {
+            habits: habits,
+            habitData: habitData
+          });
+        } catch(e) {
+          console.error("Error saving data: ", e);
+        }
       }
 
-      function initData() {
+      async function initData() {
         document.getElementById('month-title').textContent = fullMonths[currentMonthIndex];
         
-        const savedHabits = localStorage.getItem('gymTrackerHabits');
-        const savedData = localStorage.getItem('gymTrackerData');
+        if (currentUser) {
+            try {
+              const docSnap = await getDoc(doc(db, "users", currentUser.uid));
+              if (docSnap.exists()) {
+                  const data = docSnap.data();
+                  habits = data.habits || habits;
+                  habitData = data.habitData || habitData;
+              } else {
+                  initializeEmptyData();
+                  await saveData();
+              }
+            } catch(e) {
+              console.error("Error loading data", e);
+              initializeEmptyData();
+            }
+        }
         
-        if (savedHabits && savedData) {
-            habits = JSON.parse(savedHabits);
-            habitData = JSON.parse(savedData);
-        } else {
-            months.forEach((m, mIdx) => {
+        isDataLoaded = true;
+        renderTabs();
+        renderTable();
+        updateChart();
+        playChartIntroAnimation();
+      }
+      
+      function initializeEmptyData() {
+          months.forEach((m, mIdx) => {
               habitData['RUNNING'][mIdx] = [];
               habits['RUNNING'].forEach((h, hIdx) => {
                 habitData['RUNNING'][mIdx][hIdx] = new Array(daysInMonths[mIdx]).fill(false);
@@ -463,9 +501,7 @@
               habits['HYROX'].forEach((h, hIdx) => {
                 habitData['HYROX'][mIdx][hIdx] = new Array(daysInMonths[mIdx]).fill(false);
               });
-            });
-            saveData();
-        }
+          });
       }
 
       function applyModeTheme() {
@@ -845,12 +881,18 @@
       });
 
       // Initialization Sequence
-      initData();
       initChart();
       applyModeTheme(); // Apply the theme based on URL parameter immediately
       updateLanguageUI(); // Update UI translations (also calls renderTable)
-      renderTabs(); // Render month tabs
-      playChartIntroAnimation(); // Run the intro animation instead of instant updateChart()
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUser = user;
+          initData(); // Will fetch data then render table/charts
+        } else {
+          window.location.href = `login.html?mode=${currentMode.toLowerCase()}`;
+        }
+      });
 
       window.addEventListener('load', () => {
         setTimeout(() => {

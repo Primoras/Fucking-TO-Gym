@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - PRIMORAS Gym Tracker</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Rockwell&display=swap" rel="stylesheet">
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #050202;
+        color: white;
+        font-family: 'Inter', sans-serif;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      
+      #bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+      }
+
+      .login-panel {
+        background: rgba(10, 10, 10, 0.85);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 0, 51, 0.5);
+        border-radius: 20px;
+        padding: 3rem;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 50px rgba(255, 0, 51, 0.15);
+        text-align: center;
+        z-index: 10;
+        transform: translateY(20px);
+        animation: slideUp 0.8s ease forwards;
+      }
+
+      @keyframes slideUp {
+        to { transform: translateY(0); }
+      }
+
+      .login-panel h2 {
+        font-family: 'Rockwell', serif;
+        font-size: 2.5rem;
+        margin: 0 0 10px 0;
+        text-shadow: 0 0 20px rgba(255,0,51,0.5);
+        letter-spacing: 2px;
+      }
+
+      .login-panel p {
+        color: #888;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+      }
+
+      .input-group {
+        margin-bottom: 1.5rem;
+        text-align: left;
+      }
+
+      .input-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #ccc;
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 12px;
+        background: rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,0,51,0.3);
+        border-radius: 8px;
+        color: white;
+        font-size: 1rem;
+        font-family: 'Inter', sans-serif;
+        box-sizing: border-box;
+        transition: 0.3s;
+      }
+
+      .input-group input:focus {
+        border-color: #ff0033;
+        outline: none;
+        box-shadow: 0 0 15px rgba(255,0,51,0.5);
+      }
+
+      .btn-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-top: 2rem;
+      }
+
+      .login-btn, .register-btn {
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.3s;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 1px;
+      }
+
+      .login-btn {
+        background: linear-gradient(90deg, #aa0000, #ff0033);
+        color: white;
+        border: none;
+        box-shadow: 0 0 20px rgba(255,0,51,0.4);
+      }
+      
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 30px rgba(255,0,51,0.7);
+      }
+
+      .register-btn {
+        background: transparent;
+        color: #ff0033;
+        border: 1px solid #ff0033;
+      }
+
+      .register-btn:hover {
+        background: rgba(255,0,51,0.1);
+        box-shadow: 0 0 15px rgba(255,0,51,0.4);
+      }
+      
+      #error-msg {
+        color: #ff3366;
+        margin-top: 15px;
+        font-size: 0.85rem;
+        min-height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 3D Canvas Background from main.js -->
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="login-panel">
+      <h2>MEMBER</h2>
+      <p>Log in to access your personal tracker</p>
+      
+      <div class="input-group">
+        <label>EMAIL</label>
+        <input type="email" id="email" placeholder="Enter your email" required>
+      </div>
+      
+      <div class="input-group">
+        <label>PASSWORD</label>
+        <input type="password" id="password" placeholder="Enter your password" required>
+      </div>
+
+      <div class="btn-container">
+        <button class="login-btn" id="login-btn">LOG IN</button>
+        <button class="register-btn" id="register-btn">CREATE ACCOUNT</button>
+      </div>
+      
+      <div id="error-msg"></div>
+    </div>
+
+    <!-- Reuse the main.js 3D background -->
+    <script type="module" src="/src/main.js"></script>
+    
+    <script type="module">
+      import { auth } from './src/firebase.js';
+      import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const loginBtn = document.getElementById('login-btn');
+      const registerBtn = document.getElementById('register-btn');
+      const errorMsg = document.getElementById('error-msg');
+
+      // Check if already logged in
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Check url params if they wanted to go to explore
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode') || 'running';
+            window.location.href = `explore.html?mode=${mode}`;
+        }
+      });
+
+      function showError(msg) {
+        errorMsg.textContent = msg;
+        setTimeout(() => { errorMsg.textContent = ''; }, 5000);
+      }
+
+      loginBtn.addEventListener('click', () => {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        if(!email || !password) return showError("Please enter email and password");
+        
+        loginBtn.textContent = "LOGGING IN...";
+        signInWithEmailAndPassword(auth, email, password)
+          .then((userCredential) => {
+             // onAuthStateChanged will handle the redirect
+          })
+          .catch((error) => {
+            loginBtn.textContent = "LOG IN";
+            showError(error.message);
+          });
+      });
+
+      registerBtn.addEventListener('click', () => {
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        if(!email || !password) return showError("Please enter email and password");
+        
+        registerBtn.textContent = "CREATING...";
+        createUserWithEmailAndPassword(auth, email, password)
+          .then((userCredential) => {
+             // onAuthStateChanged will handle the redirect
+          })
+          .catch((error) => {
+            registerBtn.textContent = "CREATE ACCOUNT";
+            showError(error.message);
+          });
+      });
+    </script>
+  </body>
+</html>
